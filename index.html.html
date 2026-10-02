@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="KEST0 — Dossiês de privacidade online. Um projeto estudantil sobre vigilância digital, OPSEC e como proteger seus dados.">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>KEST0 — Dossiês de Privacidade</title>
+<style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+:root {
+  --bg: #0a0a0a;
+  --bg-elev: #141414;
+  --bg-elev-2: #1c1c1c;
+  --fg: #e8e8e8;
+  --fg-dim: #9a9a9a;
+  --fg-mute: #6a6a6a;
+  --accent: #00ff88;
+  --accent-dim: #00cc6a;
+  --warn: #ffcc00;
+  --danger: #ff4444;
+  --border: #2a2a2a;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: "SF Mono", "Monaco", "Inconsolata", "Fira Code", monospace;
+}
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+body.site-active { overflow: auto; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+
+/* ======================================================== */
+/* ===== INTRO: CAIXA 3D + OLHOS HUMANOS REALISTAS ===== */
+/* ======================================================== */
+
+#intro-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, #0d0d0d 0%, #000 100%);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: opacity 0.5s ease, visibility 0.5s;
+}
+
+/* Fases da animação */
+#intro-overlay.phase-1 .eyes-layer .eye {
+  animation: eyeExpel 0.7s cubic-bezier(0.5, -0.3, 0.9, 0.2) forwards !important;
+}
+#intro-overlay.phase-2 .cube-wrapper {
+  animation: boxPullIn 0.8s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+#intro-overlay.phase-3 { background: #000; }
+#intro-overlay.phase-4 { opacity: 0; visibility: hidden; }
+#intro-overlay.hidden { display: none; }
+
+/* ===== CENA 3D ===== */
+.scene {
+  width: 220px; height: 220px;
+  perspective: 900px;
+  position: relative;
+  cursor: pointer;
+  z-index: 3;
+}
+.cube-wrapper {
+  width: 100%; height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  animation: cubeRotate 12s infinite linear;
+}
+.cube {
+  width: 100%; height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+}
+.face {
+  position: absolute;
+  width: 220px; height: 220px;
+  border: 2px solid var(--accent);
+  background: 
+    linear-gradient(135deg, rgba(0, 255, 136, 0.08) 0%, rgba(0, 255, 136, 0.02) 100%),
+    repeating-linear-gradient(0deg, transparent 0, transparent 20px, rgba(0, 255, 136, 0.05) 20px, rgba(0, 255, 136, 0.05) 21px),
+    repeating-linear-gradient(90deg, transparent 0, transparent 20px, rgba(0, 255, 136, 0.05) 20px, rgba(0, 255, 136, 0.05) 21px),
+    #0a0a0a;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); color: var(--accent); font-size: 2rem; font-weight: 700; letter-spacing: 0.15em;
+  box-shadow: inset 0 0 40px rgba(0, 255, 136, 0.15), 0 0 30px rgba(0, 255, 136, 0.1);
+  backface-visibility: visible; user-select: none;
+}
+.face.front  { transform: translateZ(110px); }
+.face.back   { transform: rotateY(180deg) translateZ(110px); }
+.face.right  { transform: rotateY(90deg) translateZ(110px); }
+.face.left   { transform: rotateY(-90deg) translateZ(110px); }
+.face.top    { transform: rotateX(90deg) translateZ(110px); }
+.face.bottom { transform: rotateX(-90deg) translateZ(110px); }
+
+.face .face-label { position: absolute; top: 15px; left: 15px; font-size: 0.7rem; color: var(--accent-dim); letter-spacing: 0.2em; opacity: 0.7; }
+.face .face-code { position: absolute; bottom: 15px; right: 15px; font-size: 0.65rem; color: var(--fg-mute); font-family: var(--mono); opacity: 0.6; }
+
+@keyframes cubeRotate {
+  0%   { transform: rotateX(15deg) rotateY(0deg); }
+  100% { transform: rotateX(15deg) rotateY(360deg); }
+}
+@keyframes boxPullIn {
+  0%   { transform: scale(1) rotateX(15deg) rotateY(0deg); }
+  50%  { transform: scale(1.5) rotateX(15deg) rotateY(90deg); opacity: 1; }
+  100% { transform: scale(30) rotateX(15deg) rotateY(180deg); opacity: 0; }
+}
+
+/* ======================================================== */
+/* ===== OLHOS HUMANOS REALISTAS ===== */
+/* ======================================================== */
+.eyes-layer {
+  position: absolute; inset: 0; z-index: 2; pointer-events: none;
+}
+
+.eye {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: var(--size);
+  height: calc(var(--size) * 0.55); /* Proporção de amêndoa */
+  /* Formato de amêndoa realista */
+  border-radius: 75% 15% 75% 15%;
+  transform: translate(-50%, -50%) translate(var(--x), var(--y)) rotate(var(--angle));
+  
+  /* Esclera realista (não é branco puro, tem leve tom de cinza/creme e sombra) */
+  background: radial-gradient(circle at 50% 40%, #f2f2f2 0%, #e0e0e0 60%, #c5c5c5 100%);
+  
+  /* Sombras para dar profundidade de órbita e pálpebras */
+  box-shadow: 
+    inset 3px 3px 8px rgba(0, 0, 0, 0.4),   /* Sombra da pálpebra superior */
+    inset -2px -2px 6px rgba(255, 255, 255, 0.6), /* Reflexo da pálpebra inferior */
+    0 6px 15px rgba(0, 0, 0, 0.7);          /* Sombra na "pele" ao redor */
+    
+  overflow: hidden;
+  animation: 
+    humanBlink 5s infinite ease-in-out,
+    microSaccade 4s infinite steps(1);
+  animation-delay: var(--delay), calc(var(--delay) + 1s);
+  will-change: transform;
+}
+
+/* Íris e Pupila */
+.eye::before {
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 42%; height: 42%;
+  /* Íris realista (tom de avelã/castanho com anel limbar escuro) */
+  background: radial-gradient(circle at 40% 40%, #6b5b4f 0%, #4a3b2f 40%, #2a1f18 80%, #111 100%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) translate(var(--pupil-x, 0), var(--pupil-y, 0));
+  border: 1px solid rgba(0,0,0,0.3); /* Anel limbar */
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.6);
+  animation: pupilTrack 6s infinite ease-in-out;
+  animation-delay: var(--delay);
+}
+
+/* Reflexo de luz (Catchlight) - essencial para parecer vivo */
+.eye::after {
+  content: "";
+  position: absolute;
+  top: 22%; left: 28%;
+  width: 22%; height: 22%;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  filter: blur(0.5px);
+  z-index: 2;
+}
+
+/* Animações realistas */
+@keyframes humanBlink {
+  0%, 46%, 54%, 100% { transform: translate(-50%, -50%) translate(var(--x), var(--y)) rotate(var(--angle)) scaleY(1); }
+  50% { transform: translate(-50%, -50%) translate(var(--x), var(--y)) rotate(var(--angle)) scaleY(0.1); } /* Fecha o olho */
+}
+
+@keyframes microSaccade {
+  /* Pequenos ajustes involuntários do olho humano */
+  0%, 100% { --pupil-x: 0px; --pupil-y: 0px; }
+  20% { --pupil-x: 2px; --pupil-y: -1px; }
+  40% { --pupil-x: -1px; --pupil-y: 2px; }
+  60% { --pupil-x: 1px; --pupil-y: 1px; }
+  80% { --pupil-x: -2px; --pupil-y: 0px; }
+}
+
+@keyframes pupilTrack {
+  0%, 100% { transform: translate(-50%, -50%) translate(0, 0); }
+  25% { transform: translate(-50%, -50%) translate(2px, -1px); }
+  50% { transform: translate(-50%, -50%) translate(-1px, 2px); }
+  75% { transform: translate(-50%, -50%) translate(1px, 1px); }
+}
+
+/* Expulsão violenta: aperta os olhos com a força e é arremessado */
+@keyframes eyeExpel {
+  0% {
+    transform: translate(-50%, -50%) translate(var(--x), var(--y)) rotate(var(--angle)) scale(1);
+    opacity: 1;
+  }
+  20% {
+    /* Aperta os olhos com a força do impacto */
+    transform: translate(-50%, -50%) translate(var(--x), var(--y)) rotate(var(--angle)) scale(1.1, 0.15);
+    opacity: 1;
+  }
+  100% {
+    /* Arremessado para longe, girando e sumindo */
+    transform: translate(-50%, -50%) translate(calc(var(--x) * 7), calc(var(--y) * 7)) rotate(calc(var(--angle) + 180deg)) scale(0);
+    opacity: 0;
+  }
+}
+
+/* ===== TEXTO INICIAL ===== */
+.intro-title {
+  position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%);
+  text-align: center; z-index: 4; pointer-events: none;
+}
+.intro-title h1 {
+  font-family: var(--mono); font-size: clamp(2rem, 5vw, 3rem);
+  color: var(--accent); letter-spacing: 0.2em; margin-bottom: 0.5rem;
+  text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+}
+.intro-title p {
+  font-family: var(--mono); color: var(--fg-dim); font-size: 0.85rem;
+  letter-spacing: 0.15em; animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+.flash {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle, rgba(0, 255, 136, 0.4) 0%, transparent 70%);
+  opacity: 0; pointer-events: none; z-index: 5;
+}
+#intro-overlay.phase-1 .flash { animation: flashPulse 0.6s ease-out; }
+@keyframes flashPulse { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ===== TÚNEL DE DADOS ===== */
+.data-tunnel {
+  position: absolute; inset: 0; z-index: 10; background: #000;
+  opacity: 0; pointer-events: none; overflow: hidden; transition: opacity 0.3s;
+}
+#intro-overlay.phase-3 .data-tunnel { opacity: 1; }
+
+.data-column {
+  position: absolute; top: -100%; font-family: var(--mono); font-size: 14px;
+  color: var(--accent); line-height: 1.4; white-space: pre;
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.8);
+  animation: dataFall linear forwards; opacity: 0.85;
+}
+.data-column.dim { color: var(--accent-dim); opacity: 0.4; text-shadow: none; }
+.data-column.warn { color: var(--warn); }
+
+@keyframes dataFall {
+  0% { transform: translateY(0); opacity: 0; }
+  10% { opacity: 0.9; }
+  90% { opacity: 0.9; }
+  100% { transform: translateY(calc(100vh + 200%)); opacity: 0; }
+}
+
+.big-symbol {
+  position: absolute; font-family: var(--mono); font-size: clamp(3rem, 10vw, 6rem);
+  color: var(--accent); opacity: 0; text-shadow: 0 0 30px rgba(0, 255, 136, 0.8);
+  font-weight: 700; letter-spacing: 0.1em; animation: symbolFlash 1.5s ease-out forwards;
+}
+@keyframes symbolFlash {
+  0% { opacity: 0; transform: scale(0.5); }
+  20% { opacity: 0.9; transform: scale(1.1); }
+  80% { opacity: 0.9; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.2); }
+}
+
+.gps-ping {
+  position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+  animation: gpsPing 1s ease-out forwards;
+}
+@keyframes gpsPing {
+  0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.9); }
+  100% { transform: scale(1); opacity: 0; box-shadow: 0 0 0 40px rgba(0, 255, 136, 0); }
+}
+
+/* ===== RESTO DO SITE (mantido) ===== */
+#main-site { opacity: 0; transform: scale(0.95); transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1); }
+body.site-active #main-site { opacity: 1; transform: scale(1); }
+
+.topbar { position: sticky; top: 0; z-index: 100; background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); padding: 0.75rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.logo { font-family: var(--mono); font-weight: 700; font-size: 1.1rem; letter-spacing: 0.1em; color: var(--accent); }
+.logo::before { content: "▮ "; }
+.nav-toggle { display: none; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; }
+.nav-toggle span { display: block; width: 20px; height: 2px; background: var(--fg); margin: 4px 0; }
+.nav-menu { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+.nav-menu a { padding: 0.4rem 0.75rem; font-size: 0.85rem; color: var(--fg-dim); border-radius: 4px; transition: all 0.15s; white-space: nowrap; }
+.nav-menu a:hover { background: var(--bg-elev); color: var(--accent); text-decoration: none; }
+.nav-menu a.active { background: var(--bg-elev-2); color: var(--accent); }
+@media (max-width: 768px) {
+  .nav-toggle { display: block; }
+  .nav-menu { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-elev); flex-direction: column; padding: 0.5rem; border-bottom: 1px solid var(--border); }
+  .nav-menu.open { display: flex; }
+  .nav-menu a { padding: 0.75rem; }
+}
+
+.page, .dossie { display: none; max-width: 1100px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+.page.active, .dossie.active { display: block; animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.home-hero { text-align: center; padding: 2rem 1rem 3rem; }
+.seal-small { width: 80px; height: 80px; margin: 0 auto 1.5rem; border: 2px solid var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--mono); color: var(--accent); font-size: 1.5rem; background: var(--bg-elev); }
+.home-hero h1 { font-family: var(--mono); font-size: clamp(2.5rem, 8vw, 4rem); color: var(--accent); letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+.home-hero .tagline { color: var(--fg-dim); font-size: 1rem; max-width: 500px; margin: 0 auto 0.75rem; }
+.home-hero .subtitle { color: var(--fg-mute); font-size: 0.9rem; max-width: 560px; margin: 0 auto; }
+
+.alas-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; margin-top: 2rem; }
+.ala-card { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 10px; padding: 1.75rem 1.5rem; transition: all 0.2s; text-align: left; display: flex; flex-direction: column; gap: 0.75rem; min-height: 200px; }
+.ala-card:hover { border-color: var(--accent-dim); background: var(--bg-elev-2); transform: translateY(-3px); text-decoration: none; }
+.ala-card.featured { border-color: var(--accent-dim); background: linear-gradient(135deg, var(--bg-elev) 0%, rgba(0, 255, 136, 0.04) 100%); }
+.ala-card .ala-icon { font-family: var(--mono); font-size: 1.5rem; color: var(--accent); letter-spacing: 0.1em; }
+.ala-card .ala-title { font-size: 1.25rem; font-weight: 700; line-height: 1.2; color: var(--fg); }
+.ala-card .ala-desc { color: var(--fg-dim); font-size: 0.9rem; line-height: 1.5; flex-grow: 1; }
+.ala-card .ala-tag { display: inline-block; padding: 0.25rem 0.6rem; background: var(--bg-elev-2); border: 1px solid var(--border); border-radius: 4px; font-size: 0.7rem; font-family: var(--mono); color: var(--fg-mute); letter-spacing: 0.1em; align-self: flex-start; }
+.ala-card .ala-tag.live { border-color: var(--accent-dim); color: var(--accent); background: rgba(0, 255, 136, 0.05); }
+.ala-card .ala-tag.soon { border-color: var(--warn); color: var(--warn); background: rgba(255, 204, 0, 0.05); }
+.ala-card .ala-count { font-family: var(--mono); color: var(--fg-mute); font-size: 0.8rem; }
+
+.ala-header { border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2rem; }
+.ala-header .breadcrumb { font-family: var(--mono); font-size: 0.8rem; color: var(--fg-mute); letter-spacing: 0.1em; margin-bottom: 0.75rem; }
+.ala-header .breadcrumb a { color: var(--fg-dim); }
+.ala-header h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 700; line-height: 1.2; margin-bottom: 0.75rem; }
+.ala-header p { color: var(--fg-dim); font-size: 1rem; max-width: 680px; }
+
+.grupo { margin-bottom: 3rem; }
+.grupo-header { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+.grupo-num { font-family: var(--mono); color: var(--accent); font-size: 0.85rem; letter-spacing: 0.15em; }
+.grupo-titulo { font-size: 1.15rem; font-weight: 600; }
+.grupo-desc { color: var(--fg-dim); font-size: 0.85rem; margin-bottom: 1rem; }
+
+.dossie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.85rem; }
+.dossie-card { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 8px; padding: 1.1rem 1.2rem; transition: all 0.2s; text-align: left; display: flex; flex-direction: column; gap: 0.4rem; color: inherit; }
+.dossie-card:hover { border-color: var(--accent-dim); background: var(--bg-elev-2); transform: translateY(-2px); text-decoration: none; }
+.dossie-card .num { font-family: var(--mono); color: var(--accent); font-size: 0.75rem; letter-spacing: 0.15em; }
+.dossie-card .title { font-size: 0.95rem; font-weight: 600; line-height: 1.3; }
+.dossie-card .tipo { font-family: var(--mono); font-size: 0.7rem; color: var(--fg-mute); letter-spacing: 0.1em; margin-top: 0.3rem; }
+
+.dossie-header { border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2rem; }
+.dossie-header .breadcrumb { font-family: var(--mono); font-size: 0.8rem; color: var(--fg-mute); letter-spacing: 0.1em; margin-bottom: 0.75rem; }
+.dossie-header .breadcrumb a { color: var(--fg-dim); }
+.dossie-number { font-family: var(--mono); color: var(--accent); font-size: 0.85rem; letter-spacing: 0.15em; margin-bottom: 0.5rem; }
+.dossie-title { font-size: clamp(1.5rem, 4vw, 2.25rem); font-weight: 700; line-height: 1.2; margin-bottom: 0.75rem; }
+.dossie-subtitle { color: var(--fg-dim); font-size: 1rem; }
+
+.dossie-nav { display: flex; justify-content: space-between; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.dossie-nav a { padding: 0.6rem 1rem; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; color: var(--fg-dim); transition: all 0.15s; }
+.dossie-nav a:hover { border-color: var(--accent-dim); color: var(--accent); text-decoration: none; }
+.dossie-nav .prev::before { content: "← "; }
+.dossie-nav .next::after { content: " →"; }
+
+.dossie-body p { margin-bottom: 1.25rem; }
+.dossie-body h2 { font-size: 1.3rem; margin: 2rem 0 1rem; color: var(--accent); }
+.dossie-body h3 { font-size: 1.1rem; margin: 1.5rem 0 0.75rem; }
+.dossie-body ul, .dossie-body ol { margin: 0 0 1.25rem 1.5rem; }
+.dossie-body li { margin-bottom: 0.5rem; }
+.dossie-body strong { color: var(--accent); font-weight: 600; }
+.dossie-body blockquote { border-left: 3px solid var(--accent); padding: 0.75rem 1rem; margin: 1.5rem 0; background: var(--bg-elev); color: var(--fg-dim); font-style: italic; }
+
+.community-cta { margin-top: 3rem; padding: 1.5rem; background: linear-gradient(135deg, rgba(0, 255, 136, 0.03) 0%, var(--bg-elev) 100%); border: 1px solid var(--accent-dim); border-radius: 8px; position: relative; }
+.community-cta::before { content: "◆"; position: absolute; top: -12px; left: 20px; background: var(--bg); padding: 0 8px; color: var(--accent); font-family: var(--mono); font-size: 0.8rem; }
+.community-cta h4 { font-family: var(--mono); color: var(--accent); font-size: 0.9rem; letter-spacing: 0.1em; margin-bottom: 0.75rem; }
+.community-cta p { color: var(--fg-dim); font-size: 0.95rem; line-height: 1.6; margin-bottom: 1rem; }
+.community-cta .btn-discord { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.2rem; background: #5865F2; color: #fff; border-radius: 6px; font-weight: 600; font-size: 0.9rem; transition: all 0.15s; }
+.community-cta .btn-discord:hover { background: #4752C4; text-decoration: none; transform: translateY(-1px); }
+
+.term { color: var(--accent); border-bottom: 1px dashed var(--accent-dim); cursor: help; position: relative; font-weight: 500; }
+.term:hover { background: rgba(0, 255, 136, 0.1); }
+.term-tooltip { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: var(--bg-elev-2); border: 1px solid var(--accent-dim); color: var(--fg); padding: 0.6rem 0.8rem; border-radius: 6px; font-size: 0.85rem; font-weight: 400; font-style: normal; width: max-content; max-width: 280px; line-height: 1.4; opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 200; box-shadow: 0 4px 12px rgba(0,0,0,0.5); text-align: left; }
+.term-tooltip::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: var(--accent-dim); }
+.term:hover .term-tooltip, .term.show .term-tooltip { opacity: 1; }
+@media (max-width: 600px) {
+  .term-tooltip { position: fixed; bottom: 1rem; left: 1rem; right: 1rem; top: auto; transform: none; max-width: none; width: auto; }
+  .term-tooltip::after { display: none; }
+}
+
+.arsenal-category { margin-bottom: 2rem; }
+.arsenal-category h3 { font-family: var(--mono); color: var(--fg); font-size: 1rem; letter-spacing: 0.1em; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+.arsenal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+.tool-card { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem; transition: all 0.2s; }
+.tool-card:hover { border-color: var(--accent-dim); background: var(--bg-elev-2); }
+.tool-card .tool-name { font-weight: 700; font-size: 1.05rem; color: var(--accent); margin-bottom: 0.4rem; display: flex; justify-content: space-between; align-items: center; }
+.tool-card .tool-type { font-family: var(--mono); font-size: 0.7rem; color: var(--fg-mute); background: var(--bg); padding: 0.2rem 0.5rem; border-radius: 4px; }
+.tool-card .tool-desc { font-size: 0.9rem; color: var(--fg-dim); line-height: 1.5; margin-bottom: 0.75rem; }
+.tool-card .tool-meta { display: flex; gap: 0.75rem; font-size: 0.75rem; color: var(--fg-mute); font-family: var(--mono); }
+.difficulty-easy { color: var(--accent); }
+.difficulty-medium { color: var(--warn); }
+.difficulty-hard { color: var(--danger); }
+
+.quiz-container { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; }
+.quiz-progress { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 1.5rem; overflow: hidden; }
+.quiz-progress-bar { height: 100%; background: var(--accent); transition: width 0.3s; width: 0%; }
+.quiz-question { font-size: 1.1rem; font-weight: 600; margin-bottom: 1.25rem; }
+.quiz-options { display: flex; flex-direction: column; gap: 0.5rem; }
+.quiz-option { padding: 0.85rem 1rem; background: var(--bg-elev-2); border: 1px solid var(--border); border-radius: 6px; text-align: left; transition: all 0.15s; color: var(--fg); }
+.quiz-option:hover { border-color: var(--accent-dim); background: rgba(0, 255, 136, 0.05); }
+.quiz-result { text-align: center; padding: 1rem 0; }
+.quiz-result .level { font-family: var(--mono); font-size: 1.5rem; color: var(--accent); margin: 0.5rem 0; }
+.quiz-result .score { color: var(--fg-dim); margin-bottom: 1.5rem; }
+.quiz-restart { padding: 0.6rem 1.2rem; background: var(--accent); color: var(--bg); border-radius: 6px; font-weight: 600; margin-top: 1rem; }
+
+.checklist { list-style: none; margin: 0; padding: 0; }
+.checklist li { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+.checklist input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); margin-top: 2px; flex-shrink: 0; }
+.checklist label { cursor: pointer; flex: 1; }
+.checklist label.done { color: var(--fg-mute); text-decoration: line-through; }
+.progress-bar-container { background: var(--border); height: 8px; border-radius: 4px; margin: 1rem 0; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
+.btn-reset { padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: 6px; color: var(--fg-dim); font-size: 0.85rem; margin-top: 1rem; }
+.btn-reset:hover { border-color: var(--danger); color: var(--danger); }
+
+.calc-form { display: grid; gap: 1rem; margin: 1.5rem 0; }
+.calc-field label { display: block; font-size: 0.85rem; color: var(--fg-dim); margin-bottom: 0.4rem; }
+.calc-field input { width: 100%; padding: 0.6rem 0.8rem; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; color: var(--fg); font-size: 1rem; }
+.calc-field input:focus { outline: none; border-color: var(--accent); }
+.calc-result { text-align: center; padding: 1.5rem; background: var(--bg-elev); border: 1px solid var(--accent-dim); border-radius: 8px; margin-top: 1rem; }
+.calc-result .value { font-family: var(--mono); font-size: 2rem; color: var(--accent); font-weight: 700; }
+.btn-primary { padding: 0.75rem 1.5rem; background: var(--accent); color: var(--bg); border-radius: 6px; font-weight: 600; font-size: 1rem; transition: all 0.15s; display: inline-block; }
+.btn-primary:hover { background: var(--accent-dim); text-decoration: none; }
+
+.map-container { position: relative; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin: 1.5rem 0; }
+.map-svg { width: 100%; height: auto; max-height: 400px; }
+.map-pin { cursor: pointer; transition: all 0.2s; }
+.map-pin circle { fill: var(--accent); }
+.map-pin:hover circle { fill: var(--warn); r: 8; }
+.map-pin.active circle { fill: var(--warn); r: 8; }
+.map-legend { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem; font-size: 0.85rem; }
+.map-legend-item { display: flex; align-items: center; gap: 0.4rem; }
+.map-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+.map-info { margin-top: 1rem; padding: 1rem; background: var(--bg-elev-2); border-left: 3px solid var(--accent); border-radius: 4px; min-height: 80px; }
+
+.table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+th { background: var(--bg-elev); color: var(--accent); font-weight: 600; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; }
+tr:hover td { background: var(--bg-elev); }
+
+.glossary-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+.glossary-item { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; }
+.glossary-item dt { font-family: var(--mono); color: var(--accent); font-weight: 600; margin-bottom: 0.4rem; }
+.glossary-item dd { color: var(--fg-dim); font-size: 0.9rem; line-height: 1.5; }
+
+.timeline { position: relative; padding-left: 2rem; margin: 1.5rem 0; }
+.timeline::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--border); }
+.timeline-item { position: relative; margin-bottom: 2rem; }
+.timeline-item::before { content: ""; position: absolute; left: -2.35rem; top: 0.3rem; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); }
+.timeline-year { font-family: var(--mono); color: var(--accent); font-size: 0.9rem; margin-bottom: 0.25rem; }
+.timeline-title { font-weight: 600; font-size: 1.05rem; margin-bottom: 0.5rem; }
+
+.painel { background: var(--bg-elev); border: 1px solid var(--accent-dim); border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; }
+.painel-level { text-align: center; margin-bottom: 1.5rem; }
+.painel-level .label { font-family: var(--mono); font-size: 0.85rem; color: var(--fg-dim); letter-spacing: 0.15em; }
+.painel-level .value { font-family: var(--mono); font-size: 2rem; color: var(--accent); font-weight: 700; margin: 0.25rem 0; }
+.painel-badges { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.5rem; margin: 1rem 0; }
+.badge { padding: 0.5rem; background: var(--bg-elev-2); border: 1px solid var(--border); border-radius: 4px; font-size: 0.8rem; text-align: center; color: var(--fg-mute); }
+.badge.done { border-color: var(--accent-dim); color: var(--accent); background: rgba(0, 255, 136, 0.05); }
+.desafio-box { background: var(--bg-elev-2); border-left: 3px solid var(--warn); padding: 1rem; margin: 1rem 0; border-radius: 4px; }
+.desafio-box .label { font-family: var(--mono); font-size: 0.75rem; color: var(--warn); letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+.desafio-box .text { font-size: 0.95rem; margin-bottom: 0.75rem; }
+
+.placeholder-box { text-align: center; padding: 4rem 1.5rem; background: var(--bg-elev); border: 1px dashed var(--border); border-radius: 10px; margin: 2rem 0; }
+.placeholder-box .icon { font-family: var(--mono); font-size: 3rem; color: var(--fg-mute); margin-bottom: 1rem; }
+.placeholder-box h2 { font-size: 1.3rem; margin-bottom: 0.75rem; color: var(--fg); }
+.placeholder-box p { color: var(--fg-dim); max-width: 480px; margin: 0 auto 1rem; }
+.placeholder-box .status { display: inline-block; padding: 0.3rem 0.8rem; background: rgba(255, 204, 0, 0.05); border: 1px solid var(--warn); border-radius: 4px; font-family: var(--mono); font-size: 0.75rem; color: var(--warn); letter-spacing: 0.1em; }
+
+footer { border-top: 1px solid var(--border); padding: 2rem 1.5rem; text-align: center; color: var(--fg-mute); font-size: 0.85rem; margin-top: 3rem; }
+footer .mono { font-family: var(--mono); color: var(--accent-dim); letter-spacing: 0.1em; }
+.hidden { display: none !important; }
+.mt-1 { margin-top: 1rem; }
+.mt-2 { margin-top: 2rem; }
+.text-dim { color: var(--fg-dim); }
+.text-center { text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ===== INTRO ANIMATION ===== -->
+<div id="intro-overlay">
+  <div class="flash"></div>
+  <div class="eyes-layer" id="eyesLayer"></div>
+  
+  <div class="scene" id="scene">
+    <div class="cube-wrapper">
+      <div class="cube">
+        <div class="face front"><span class="face-label">KEST0</span>▮<span class="face-code">AES-256</span></div>
+        <div class="face back"><span class="face-label">PRIVACY</span>▮<span class="face-code">RSA-4096</span></div>
+        <div class="face right"><span class="face-label">OPSEC</span>▮<span class="face-code">SHA-512</span></div>
+        <div class="face left"><span class="face-label">SECURE</span>▮<span class="face-code">E2E-PGP</span></div>
+        <div class="face top"><span class="face-label">TOR</span>▮<span class="face-code">ONION</span></div>
+        <div class="face bottom"><span class="face-label">DATA</span>▮<span class="face-code">ENCRYPT</span></div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="intro-title">
+    <h1>KEST0</h1>
+    <p>▸ CLIQUE NA CAIXA PARA ABRIR ◂</p>
+  </div>
+  
+  <div class="data-tunnel" id="dataTunnel"></div>
+</div>
+
+<!-- ===== MAIN SITE ===== -->
+<div id="main-site">
+<header class="topbar">
+  <a href="#home" class="logo">KEST0</a>
+  <button class="nav-toggle" id="navToggle" aria-label="Menu"><span></span><span></span><span></span></button>
+  <nav class="nav-menu" id="navMenu">
+    <a href="#home">Início</a>
+    <a href="#ala-dossies">Dossiês</a>
+    <a href="#ala-videos">Vídeos</a>
+    <a href="#ala-tutoriais">Tutoriais</a>
+    <a href="#ala-comunidade">Comunidade</a>
+    <a href="#painel">◆ Painel</a>
+  </nav>
+</header>
+
+<main id="conteudo-principal">
+<section class="page" id="home">
+  <div class="home-hero">
+    <div class="seal-small">▮</div>
+    <h1>KEST0</h1>
+    <p class="tagline"><em>kesto · substantivo, esperanto · caixa</em><br>Um lugar para guardar o que deveria ser seu por direito.</p>
+    <p class="subtitle">Privacidade não é sobre ter algo a esconder. É sobre entender quem está olhando, o que enxerga e o que faz com aquilo que vê.</p>
+  </div>
+  <h2 style="text-align:center; margin:2rem 0 0.5rem; color:var(--accent); font-family:var(--mono); font-size:0.9rem; letter-spacing:0.15em;">ESCOLHA UMA ALA</h2>
+  <p class="text-center text-dim" style="max-width:560px; margin:0 auto;">Cada ala é um tipo de conteúdo. Escolha por onde quer começar.</p>
+  <div class="alas-grid">
+    <a href="#ala-dossies" class="ala-card featured"><div class="ala-tag live">● AO VIVO</div><div class="ala-icon">▮▮▮</div><div class="ala-title">Dossiês</div><div class="ala-desc">18 arquivos sobre vigilância, OPSEC, LGPD, golpes e privacidade no Brasil.</div><div class="ala-count">18 arquivos disponíveis</div></a>
+    <a href="#ala-videos" class="ala-card"><div class="ala-tag soon">◐ EM BREVE</div><div class="ala-icon">▶</div><div class="ala-title">Vídeos</div><div class="ala-desc">Conteúdo em vídeo produzido por mim mesmo, aprofundando os temas dos dossiês.</div><div class="ala-count">Em produção</div></a>
+    <a href="#ala-tutoriais" class="ala-card"><div class="ala-tag soon">◐ EM BREVE</div><div class="ala-icon">⚙</div><div class="ala-title">Tutoriais de ferramentas</div><div class="ala-desc">Passo a passo com imagens para instalar e configurar ferramentas de privacidade.</div><div class="ala-count">Em produção</div></a>
+    <a href="#ala-comunidade" class="ala-card"><div class="ala-tag live">● AO VIVO</div><div class="ala-icon">◈</div><div class="ala-title">Comunidade</div><div class="ala-desc">Nosso servidor no Discord. Dúvidas, relatos de golpes, ajuda com configurações.</div><div class="ala-count">Comunidade em construção</div></a>
+    <a href="#painel" class="ala-card"><div class="ala-tag live">● AO VIVO</div><div class="ala-icon">◆</div><div class="ala-title">Painel do Operador</div><div class="ala-desc">Seu progresso pessoal: quiz, checklist, desafios da semana e nível de privacidade.</div><div class="ala-count">Acompanhe sua evolução</div></a>
+  </div>
+</section>
+
+<section class="page" id="ala-dossies">
+  <div class="ala-header">
+    <div class="breadcrumb"><a href="#home">INÍCIO</a> / DOSSIÊS</div>
+    <h1>Todos os dossiês.</h1>
+    <p>18 arquivos organizados por tema. Cada um é independente.</p>
+  </div>
+  <div class="grupo">
+    <div class="grupo-header"><div class="grupo-num">GRUPO 01</div><div class="grupo-titulo">Fundamentos</div></div>
+    <p class="grupo-desc">Quem vigia, por que vigia, e por que privacidade importa.</p>
+    <div class="dossie-grid">
+      <a href="#dossie-01" class="dossie-card"><div class="num">ARQUIVO 01</div><div class="title">Alguém que não é seu amigo sabe bastante sobre você</div><div class="tipo">LEITURA · 3 MIN</div></a>
+      <a href="#dossie-02" class="dossie-card"><div class="num">ARQUIVO 02</div><div class="title">Altruísmo empresarial não existe</div><div class="tipo">LEITURA · 4 MIN</div></a>
+      <a href="#dossie-03" class="dossie-card"><div class="num">ARQUIVO 03</div><div class="title">O Arsenal Alternativo: Ferramentas</div><div class="tipo">REFERÊNCIA · 8 MIN</div></a>
+      <a href="#dossie-04" class="dossie-card"><div class="num">ARQUIVO 04</div><div class="title">O que é OPSEC?</div><div class="tipo">LEITURA · 4 MIN</div></a>
+      <a href="#dossie-05" class="dossie-card"><div class="num">ARQUIVO 05</div><div class="title">Anonimato não é crime</div><div class="tipo">LEITURA · 5 MIN</div></a>
+    </div>
+  </div>
+  <div class="grupo">
+    <div class="grupo-header"><div class="grupo-num">GRUPO 02</div><div class="grupo-titulo">Ferramentas práticas</div></div>
+    <p class="grupo-desc">Quiz, checklist, calculadora e glossário.</p>
+    <div class="dossie-grid">
+      <a href="#dossie-07" class="dossie-card"><div class="num">ARQUIVO 07</div><div class="title">Qual seu nível de vigilância?</div><div class="tipo">INTERATIVO · QUIZ</div></a>
+      <a href="#dossie-08" class="dossie-card"><div class="num">ARQUIVO 08</div><div class="title">Checklist de OPSEC pessoal</div><div class="tipo">INTERATIVO · CHECKLIST</div></a>
+      <a href="#dossie-09" class="dossie-card"><div class="num">ARQUIVO 09</div><div class="title">Quanto de você vira dado?</div><div class="tipo">INTERATIVO · CALCULADORA</div></a>
+      <a href="#dossie-10" class="dossie-card"><div class="num">ARQUIVO 10</div><div class="title">Glossário</div><div class="tipo">REFERÊNCIA</div></a>
+    </div>
+  </div>
+  <div class="grupo">
+    <div class="grupo-header"><div class="grupo-num">GRUPO 03</div><div class="grupo-titulo">Brasil, lei e casos reais</div></div>
+    <p class="grupo-desc">LGPD, vazamentos brasileiros, golpes e o mapa global da vigilância.</p>
+    <div class="dossie-grid">
+      <a href="#dossie-11" class="dossie-card"><div class="num">ARQUIVO 11</div><div class="title">A LGPD e seus direitos</div><div class="tipo">LEITURA · 5 MIN</div></a>
+      <a href="#dossie-12" class="dossie-card"><div class="num">ARQUIVO 12</div><div class="title">Casos reais</div><div class="tipo">LEITURA · 4 MIN</div></a>
+      <a href="#dossie-13" class="dossie-card"><div class="num">ARQUIVO 13</div><div class="title">Mapa da vigilância</div><div class="tipo">INTERATIVO · MAPA</div></a>
+      <a href="#dossie-14" class="dossie-card"><div class="num">ARQUIVO 14</div><div class="title">Golpes com nome e sobrenome</div><div class="tipo">LEITURA · 5 MIN</div></a>
+      <a href="#dossie-15" class="dossie-card"><div class="num">ARQUIVO 15</div><div class="title">Vigiado pelo app, exposto pelo vazamento</div><div class="tipo">LEITURA · 5 MIN</div></a>
+    </div>
+  </div>
+  <div class="grupo">
+    <div class="grupo-header"><div class="grupo-num">GRUPO 04</div><div class="grupo-titulo">Aprofundamento</div></div>
+    <p class="grupo-desc">Celular como espião, tríade da sobrevivência digital e bastidores.</p>
+    <div class="dossie-grid">
+      <a href="#dossie-16" class="dossie-card"><div class="num">ARQUIVO 16</div><div class="title">O seu celular é um espião de bolso</div><div class="tipo">LEITURA · 6 MIN</div></a>
+      <a href="#dossie-17" class="dossie-card"><div class="num">ARQUIVO 17</div><div class="title">A tríade da sobrevivência digital</div><div class="tipo">LEITURA · 7 MIN</div></a>
+      <a href="#dossie-18" class="dossie-card"><div class="num">ARQUIVO 18</div><div class="title">Bastidores e fontes</div><div class="tipo">LEITURA · 4 MIN</div></a>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="ala-videos">
+  <div class="ala-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / VÍDEOS</div><h1>Vídeos.</h1><p>Conteúdo em vídeo produzido por mim mesmo.</p></div>
+  <div class="placeholder-box"><div class="icon">▶</div><h2>Em produção</h2><p>Os primeiros vídeos estão sendo roteirizados.</p><div class="status">◐ EM BREVE</div></div>
+</section>
+
+<section class="page" id="ala-tutoriais">
+  <div class="ala-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / TUTORIAIS</div><h1>Tutoriais de ferramentas.</h1><p>Passo a passo com imagens.</p></div>
+  <div class="placeholder-box"><div class="icon">⚙</div><h2>Em produção</h2><p>Cada tutorial vai cobrir uma ferramenta específica.</p><div class="status">◐ EM BREVE</div></div>
+</section>
+
+<section class="page" id="ala-comunidade">
+  <div class="ala-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / COMUNIDADE</div><h1>Comunidade no Discord.</h1></div>
+  <div class="dossie-body">
+    <p>Construir um fórum próprio é caro. O Discord foi escolhido por ser gratuito e acessível.</p>
+    <h2>Canais</h2>
+    <ul><li><strong>#dúvidas-gerais</strong></li><li><strong>#configurações</strong></li><li><strong>#golpes-e-alertas</strong></li><li><strong>#sugestões</strong></li></ul>
+    <div class="painel" style="text-align:center;">
+      <p style="margin-bottom:1rem;"><strong>Quer entrar?</strong></p>
+      <a href="https://discord.gg/hHM4nR77n" class="btn-primary" target="_blank" rel="noopener" style="background:#5865F2;">Entrar no Discord do KEST0</a>
+    </div>
+  </div>
+</section>
+
+<!-- DOSSIÊS (Estrutura condensada, mas funcional) -->
+<section class="dossie" id="dossie-01"><div class="dossie-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / <a href="#ala-dossies">DOSSIÊS</a> / ARQUIVO 01</div><div class="dossie-number">ARQUIVO Nº 01</div><h1 class="dossie-title">Alguém que não é seu amigo sabe bastante sobre você.</h1></div><div class="dossie-body"><p>Você provavelmente nunca contou a um estranho onde mora, que horas sai de casa, qual caminho faz até o trabalho ou a escola, e quando nasceu. Mas se essa pessoa abrisse o seu perfil nas redes sociais por dez minutos, talvez já soubesse de tudo isso.</p><p>Não é paranoia: é aritmética simples. Uma foto no ponto de ônibus de sempre, marcada às 7h04 da manhã, três dias por semana, conta uma rotina.</p><h2>O que costuma vazar sem você perceber</h2><ul><li><strong>Rotina de deslocamento</strong> repetida em stories e check-ins</li><li><strong>Datas de nascimento completas</strong> expostas em biografias</li><li><strong>Fotos de viagem</strong> publicadas em tempo real</li><li><strong>Marcações de localização</strong> em fotos de crianças e escolas</li></ul><p>O primeiro passo de qualquer estratégia de <span class="term">privacidade<span class="term-tooltip">Controle sobre quem acessa quais informações sobre você, e em que contexto.</span></span> não é uma ferramenta nova — é revisar o que você já deixou visível.</p></div><div class="dossie-nav"><span></span><a href="#dossie-02" class="next">Próximo</a></div></section>
+
+<section class="dossie" id="dossie-02"><div class="dossie-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / <a href="#ala-dossies">DOSSIÊS</a> / ARQUIVO 02</div><div class="dossie-number">ARQUIVO Nº 02</div><h1 class="dossie-title">Altruísmo empresarial não existe.</h1></div><div class="dossie-body"><p>Quando você não paga por um produto com dinheiro, você paga com outra coisa: sua atenção, seus hábitos e, principalmente, seus dados.</p><blockquote>Se o serviço é gratuito, o produto sendo vendido é você.</blockquote><p>Esse perfil é vendido para anunciantes, <span class="term">corretores de dados<span class="term-tooltip">Empresas que compilam e revendem informações pessoais.</span></span> e, em alguns casos, para qualquer um disposto a pagar por ele.</p></div><div class="dossie-nav"><a href="#dossie-01" class="prev">Anterior</a><a href="#dossie-03" class="next">Próximo</a></div></section>
+
+<section class="dossie" id="dossie-03"><div class="dossie-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / <a href="#ala-dossies">DOSSIÊS</a> / ARQUIVO 03</div><div class="dossie-number">ARQUIVO Nº 03</div><h1 class="dossie-title">O Arsenal Alternativo.</h1><p class="dossie-subtitle">Ferramentas famosas e de nicho para retomar o controle.</p></div><div class="dossie-body"><p>Existe um universo de programas de <span class="term">código aberto<span class="term-tooltip">Software cujo código-fonte é público e pode ser auditado.</span></span> desenhados para não espionar quem os usa.</p><div class="arsenal-category"><h3>🌐 NAVEGAÇÃO E BUSCA</h3><div class="arsenal-grid"><div class="tool-card"><div class="tool-name">LibreWolf <span class="tool-type">Navegador</span></div><div class="tool-desc">Fork do Firefox focado em privacidade.</div><div class="tool-meta"><span class="difficulty-easy">● Fácil</span></div></div><div class="tool-card"><div class="tool-name">Tor Browser <span class="tool-type">Navegador</span></div><div class="tool-desc">Roteia seu tráfego através de três nós voluntários.</div><div class="tool-meta"><span class="difficulty-medium">● Médio</span></div></div><div class="tool-card"><div class="tool-name">SearXNG <span class="tool-type">Busca</span></div><div class="tool-desc">Meta-motor de busca de código aberto.</div><div class="tool-meta"><span class="difficulty-easy">● Fácil</span></div></div><div class="tool-card"><div class="tool-name">DuckDuckGo <span class="tool-type">Busca</span></div><div class="tool-desc">Alternativa famosa e acessível.</div><div class="tool-meta"><span class="difficulty-easy">● Fácil</span></div></div></div></div><div class="arsenal-category"><h3>💬 COMUNICAÇÃO SEGURA</h3><div class="arsenal-grid"><div class="tool-card"><div class="tool-name">Signal <span class="tool-type">Mensagens</span></div><div class="tool-desc">O padrão-ouro. <span class="term">Criptografia de ponta a ponta<span class="term-tooltip">Sistema em que apenas remetente e destinatário leem o conteúdo.</span></span>.</div><div class="tool-meta"><span class="difficulty-easy">● Fácil</span></div></div><div class="tool-card"><div class="tool-name">Session <span class="tool-type">Mensagens</span></div><div class="tool-desc">Não requer número de telefone nem e-mail.</div><div class="tool-meta"><span class="difficulty-medium">● Médio</span></div></div><div class="tool-card"><div class="tool-name">ProtonMail <span class="tool-type">E-mail</span></div><div class="tool-desc">E-mail com criptografia de ponta a ponta.</div><div class="tool-meta"><span class="difficulty-easy">● Fácil</span></div></div><div class="tool-card"><div class="tool-name">SimpleX Chat <span class="tool-type">Mensagens</span></div><div class="tool-desc">Primeiro mensageiro sem identificadores de usuário.</div><div class="tool-meta"><span class="difficulty-hard">● Avançado</span></div></div></div></div><div class="arsenal-category"><h3>🔐 CREDENCIAIS E CRIPTOGRAFIA</h3><div class="arsenal-grid"><div class="tool-card"><div class="tool-name">KeePassXC <span class="tool-type">Senhas</span></div><div class="tool-desc">Gerenciador local e de código aberto.</div><div class="tool-meta"><span class="difficulty-medium">● Médio</span></div></div><div class="tool-card"><div class="tool-name">Bitwarden <span class="tool-type">Senhas</span></div><div class="tool-desc">Versão oficial em nuvem (código aberto).</div><div class="tool-meta"><span class="difficulty-easy">● Fácil</span></div></div><div class="tool-card"><div class="tool-name">VeraCrypt <span class="tool-type">Criptografia</span></div><div class="tool-desc">Cria discos virtuais criptografados.</div><div class="tool-meta"><span class="difficulty-hard">● Avançado</span></div></div><div class="tool-card"><div class="tool-name">Aegis / 2FAS <span class="tool-type">2FA</span></div><div class="tool-desc">Apps de autenticação de dois fatores.</div><div class="tool-meta"><span class="difficulty-easy">● Fácil</span></div></div></div></div><div class="arsenal-category"><h3>☁️ ARMAZENAMENTO E COMPARTILHAMENTO</h3><div class="arsenal-grid"><div class="tool-card"><div class="tool-name">Proton Drive <span class="tool-type">Nuvem</span></div><div class="tool-desc">Nuvem com criptografia de ponta a ponta.</div><div class="tool-meta"><span class="difficulty-easy">● Fácil</span></div></div><div class="tool-card"><div class="tool-name">Cryptomator <span class="tool-type">Utilitário</span></div><div class="tool-desc">Criptografa arquivos antes de enviá-los para qualquer nuvem.</div><div class="tool-meta"><span class="difficulty-medium">● Médio</span></div></div><div class="tool-card"><div class="tool-name">Syncthing <span class="tool-type">Sincronização</span></div><div class="tool-desc">Sincroniza arquivos entre dispositivos de forma P2P.</div><div class="tool-meta"><span class="difficulty-medium">● Médio</span></div></div><div class="tool-card"><div class="tool-name">OnionShare <span class="tool-type">Compartilhamento</span></div><div class="tool-desc">Usa a rede Tor para compartilhar arquivos anonimamente.</div><div class="tool-meta"><span class="difficulty-hard">● Avançado</span></div></div></div></div><div class="arsenal-category"><h3>💻 SISTEMAS OPERACIONAIS E REDE</h3><div class="arsenal-grid"><div class="tool-card"><div class="tool-name">Linux (Mint / Fedora) <span class="tool-type">SO</span></div><div class="tool-desc">Alternativa ao Windows/macOS.</div><div class="tool-meta"><span class="difficulty-medium">● Médio</span></div></div><div class="tool-card"><div class="tool-name">Tails OS <span class="tool-type">SO</span></div><div class="tool-desc">Sistema amnésico que roda de pen drive.</div><div class="tool-meta"><span class="difficulty-hard">● Avançado</span></div></div><div class="tool-card"><div class="tool-name">uBlock Origin <span class="tool-type">Extensão</span></div><div class="tool-desc">Bloqueador de anúncios e rastreadores.</div><div class="tool-meta"><span class="difficulty-easy">● Fácil</span></div></div><div class="tool-card"><div class="tool-name">Pi-hole <span class="tool-type">Rede</span></div><div class="tool-desc">Bloqueia anúncios em nível de rede (DNS).</div><div class="tool-meta"><span class="difficulty-hard">● Avançado</span></div></div></div></div></div><div class="dossie-nav"><a href="#dossie-02" class="prev">Anterior</a><a href="#dossie-04" class="next">Próximo</a></div></section>
+
+<section class="dossie" id="dossie-04"><div class="dossie-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / <a href="#ala-dossies">DOSSIÊS</a> / ARQUIVO 04</div><div class="dossie-number">ARQUIVO Nº 04</div><h1 class="dossie-title">O que é OPSEC?</h1></div><div class="dossie-body"><p><span class="term">OPSEC<span class="term-tooltip">Segurança Operacional.</span></span> é o hábito de proteger informações pequenas para que ninguém consiga montar um quadro completo sobre você.</p></div><div class="dossie-nav"><a href="#dossie-03" class="prev">Anterior</a><a href="#dossie-05" class="next">Próximo</a></div></section>
+<section class="dossie" id="dossie-05"><div class="dossie-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / <a href="#ala-dossies">DOSSIÊS</a> / ARQUIVO 05</div><div class="dossie-number">ARQUIVO Nº 05</div><h1 class="dossie-title">Anonimato não é crime.</h1></div><div class="dossie-body"><blockquote>Privacidade não é um privilégio de quem tem algo a esconder. É a ferramenta de quem tem algo a proteger.</blockquote></div><div class="dossie-nav"><a href="#dossie-04" class="prev">Anterior</a><a href="#dossie-07" class="next">Próximo</a></div></section>
+<section class="dossie" id="dossie-07"><div class="dossie-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / <a href="#ala-dossies">DOSSIÊS</a> / ARQUIVO 07</div><div class="dossie-number">ARQUIVO Nº 07</div><h1 class="dossie-title">Qual é o seu nível de vigilância?</h1></div><div class="dossie-body"><div class="quiz-container" id="quizContainer"><div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar"></div></div><div id="quizContent"></div></div></div><div class="dossie-nav"><a href="#dossie-05" class="prev">Anterior</a><a href="#dossie-08" class="next">Próximo</a></div></section>
+<section class="dossie" id="dossie-08"><div class="dossie-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / <a href="#ala-dossies">DOSSIÊS</a> / ARQUIVO 08</div><div class="dossie-number">ARQUIVO Nº 08</div><h1 class="dossie-title">Checklist de OPSEC pessoal.</h1></div><div class="dossie-body"><div class="progress-bar-container"><div class="progress-bar-fill" id="checklistProgress"></div></div><p class="text-dim" id="checklistCounter">0 de 12 concluídos</p><ul class="checklist mt-2" id="checklist"><li><input type="checkbox" id="c1"><label for="c1">Revisei a privacidade das minhas redes sociais</label></li><li><input type="checkbox" id="c2"><label for="c2">Removi data de nascimento das biografias</label></li><li><input type="checkbox" id="c3"><label for="c3">Ativei 2FA no e-mail principal</label></li><li><input type="checkbox" id="c4"><label for="c4">Ativei 2FA no WhatsApp</label></li><li><input type="checkbox" id="c5"><label for="c5">Ativei 2FA no Instagram</label></li><li><input type="checkbox" id="c6"><label for="c6">Troquei senhas repetidas</label></li><li><input type="checkbox" id="c7"><label for="c7">Uso gerenciador de senhas</label></li><li><input type="checkbox" id="c8"><label for="c8">Revisei permissões dos apps</label></li><li><input type="checkbox" id="c9"><label for="c9">Desativei rastreamento de anúncios</label></li><li><input type="checkbox" id="c10"><label for="c10">Tenho backup recente</label></li><li><input type="checkbox" id="c11"><label for="c11">Sei usar a LGPD</label></li><li><input type="checkbox" id="c12"><label for="c12">Conversei com família sobre golpes</label></li></ul><button class="btn-reset" id="resetChecklist">Zerar progresso</button></div><div class="dossie-nav"><a href="#dossie-07" class="prev">Anterior</a><a href="#dossie-09" class="next">Próximo</a></div></section>
+<section class="dossie" id="dossie-09"><div class="dossie-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / <a href="#ala-dossies">DOSSIÊS</a> / ARQUIVO 09</div><div class="dossie-number">ARQUIVO Nº 09</div><h1 class="dossie-title">Quanto de você vira dado?</h1></div><div class="dossie-body"><div class="calc-form"><div class="calc-field"><label>Mensagens por dia</label><input type="number" id="calcMsg" min="0" value="30"></div><div class="calc-field"><label>Fotos por dia</label><input type="number" id="calcFotos" min="0" value="2"></div><div class="calc-field"><label>Minutos de vídeo</label><input type="number" id="calcVideo" min="0" value="60"></div><div class="calc-field"><label>Minutos de áudio</label><input type="number" id="calcAudio" min="0" value="10"></div><button class="btn-primary" id="calcBtn">Calcular</button></div><div class="calc-result hidden" id="calcResult"><div class="value" id="calcValue">0 MB</div></div></div><div class="dossie-nav"><a href="#dossie-08" class="prev">Anterior</a><a href="#dossie-10" class="next">Próximo</a></div></section>
+<section class="dossie" id="dossie-10"><div class="dossie-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / <a href="#ala-dossies">DOSSIÊS</a> / ARQUIVO 10</div><div class="dossie-number">ARQUIVO Nº 10</div><h1 class="dossie-title">Glossário.</h1></div><div class="dossie-body"><div class="glossary-list" id="glossaryList"></div></div><div class="dossie-nav"><a href="#dossie-09" class="prev">Anterior</a><a href="#dossie-11" class="next">Próximo</a></div></section>
+<section class="dossie" id="dossie-11"><div class="dossie-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / <a href="#ala-dossies">DOSSIÊS</a> / ARQUIVO 11</div><div class="dossie-number">ARQUIVO Nº 11</div><h1 class="dossie-title">A LGPD e seus direitos.</h1></div><div class="dossie-body"><p>A <span class="term">LGPD<span class="term-tooltip">Lei Geral de Proteção de Dados.</span></span> regula como empresas podem coletar e usar dados pessoais no Brasil.</p></div><div class="dossie-nav"><a href="#dossie-10" class="prev">Anterior</a><a href="#dossie-12" class="next">Próximo</a></div></section>
+<section class="dossie" id="dossie-12"><div class="dossie-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / <a href="#ala-dossies">DOSSIÊS</a> / ARQUIVO 12</div><div class="dossie-number">ARQUIVO Nº 12</div><h1 class="dossie-title">Casos reais.</h1></div><div class="dossie-body"><div class="timeline"><div class="timeline-item"><div class="timeline-year">2013</div><div class="timeline-title">Snowden e a NSA</div></div><div class="timeline-item"><div class="timeline-year">2018</div><div class="timeline-title">Cambridge Analytica</div></div><div class="timeline-item"><div class="timeline-year">2019</div><div class="timeline-title">Vaza Jato</div></div><div class="timeline-item"><div class="timeline-year">2021</div><div class="timeline-title">Pegasus</div></div></div></div><div class="dossie-nav"><a href="#dossie-11" class="prev">Anterior</a><a href="#dossie-13" class="next">Próximo</a></div></section>
+<section class="dossie" id="dossie-13"><div class="dossie-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / <a href="#ala-dossies">DOSSIÊS</a> / ARQUIVO 13</div><div class="dossie-number">ARQUIVO Nº 13</div><h1 class="dossie-title">O mapa da vigilância.</h1></div><div class="dossie-body"><div class="map-container"><svg class="map-svg" viewBox="0 0 800 400"><ellipse cx="200" cy="180" rx="80" ry="50" fill="#1c1c1c" stroke="#2a2a2a"/><ellipse cx="350" cy="200" rx="60" ry="70" fill="#1c1c1c" stroke="#2a2a2a"/><ellipse cx="480" cy="180" rx="90" ry="60" fill="#1c1c1c" stroke="#2a2a2a"/><ellipse cx="600" cy="200" rx="70" ry="50" fill="#1c1c1c" stroke="#2a2a2a"/><ellipse cx="680" cy="280" rx="50" ry="40" fill="#1c1c1c" stroke="#2a2a2a"/><ellipse cx="280" cy="300" rx="40" ry="50" fill="#1c1c1c" stroke="#2a2a2a"/><g class="map-pin" data-country="china" transform="translate(580, 170)"><circle r="6" fill="#ff4444"/></g><g class="map-pin" data-country="eua" transform="translate(180, 170)"><circle r="6" fill="#ffcc00"/></g><g class="map-pin" data-country="ue" transform="translate(380, 150)"><circle r="6" fill="#00ff88"/></g><g class="map-pin" data-country="brasil" transform="translate(280, 290)"><circle r="6" fill="#ffcc00"/></g><g class="map-pin" data-country="russia" transform="translate(500, 130)"><circle r="6" fill="#ff4444"/></g><g class="map-pin" data-country="israel" transform="translate(440, 200)"><circle r="6" fill="#ff4444"/></g></svg><div class="map-info" id="mapInfo"><p class="text-dim">Clique em um ponto do mapa.</p></div></div></div><div class="dossie-nav"><a href="#dossie-12" class="prev">Anterior</a><a href="#dossie-14" class="next">Próximo</a></div></section>
+<section class="dossie" id="dossie-14"><div class="dossie-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / <a href="#ala-dossies">DOSSIÊS</a> / ARQUIVO 14</div><div class="dossie-number">ARQUIVO Nº 14</div><h1 class="dossie-title">Golpes brasileiros.</h1></div><div class="dossie-body"><blockquote>Nenhum banco pede para você ditar um código recebido por SMS. Essa frase, sozinha, já é o golpe.</blockquote></div><div class="dossie-nav"><a href="#dossie-13" class="prev">Anterior</a><a href="#dossie-15" class="next">Próximo</a></div></section>
+<section class="dossie" id="dossie-15"><div class="dossie-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / <a href="#ala-dossies">DOSSIÊS</a> / ARQUIVO 15</div><div class="dossie-number">ARQUIVO Nº 15</div><h1 class="dossie-title">Vigiado pelo app, exposto pelo vazamento.</h1></div><div class="dossie-body"><p>O vazamento da Serasa (2021) expôs 220 milhões de CPFs.</p></div><div class="dossie-nav"><a href="#dossie-14" class="prev">Anterior</a><a href="#dossie-16" class="next">Próximo</a></div></section>
+<section class="dossie" id="dossie-16"><div class="dossie-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / <a href="#ala-dossies">DOSSIÊS</a> / ARQUIVO 16</div><div class="dossie-number">ARQUIVO Nº 16</div><h1 class="dossie-title">O seu celular é um espião de bolso.</h1></div><div class="dossie-body"><blockquote>Se o app não precisa da permissão para funcionar, não dê.</blockquote></div><div class="dossie-nav"><a href="#dossie-15" class="prev">Anterior</a><a href="#dossie-17" class="next">Próximo</a></div></section>
+<section class="dossie" id="dossie-17"><div class="dossie-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / <a href="#ala-dossies">DOSSIÊS</a> / ARQUIVO 17</div><div class="dossie-number">ARQUIVO Nº 17</div><h1 class="dossie-title">A tríade da sobrevivência digital.</h1></div><div class="dossie-body"><p>Senhas fortes, 2FA e backup. Os três pilares.</p></div><div class="dossie-nav"><a href="#dossie-16" class="prev">Anterior</a><a href="#dossie-18" class="next">Próximo</a></div></section>
+<section class="dossie" id="dossie-18"><div class="dossie-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / <a href="#ala-dossies">DOSSIÊS</a> / ARQUIVO 18</div><div class="dossie-number">ARQUIVO Nº 18</div><h1 class="dossie-title">Bastidores e fontes.</h1></div><div class="dossie-body"><p>Projeto estudantil. Zero trackers. Zero cookies de terceiros.</p></div><div class="dossie-nav"><a href="#dossie-17" class="prev">Anterior</a><span></span></div></section>
+
+<section class="page" id="painel"><div class="ala-header"><div class="breadcrumb"><a href="#home">INÍCIO</a> / PAINEL</div><h1>Painel do Operador.</h1></div><div class="painel"><div class="painel-level"><div class="label">NÍVEL ATUAL</div><div class="value" id="painelLevel">OBSERVADO</div><div class="text-dim" id="painelPercent">0%</div></div><div class="painel-badges"><div class="badge" id="badgeTeste">◆ Teste feito</div><div class="badge" id="badgeChecklist">◆ Checklist completo</div><div class="badge" id="badgeArquivos">◆ 5+ arquivos lidos</div><div class="badge" id="badgeDesafio">◆ Desafio da semana</div></div><div class="desafio-box"><div class="label">DESAFIO DA SEMANA</div><div class="text" id="desafioText">Carregando...</div><button class="btn-primary" id="desafioBtn" style="padding:0.5rem 1rem; font-size:0.85rem;">Marquei como concluído</button></div></div></section>
+</main>
+
+<footer>
+  <p><span class="mono">KEST0</span> — arquivo em construção.</p>
+  <p class="mt-1">Projeto estudantil · Sem trackers · Sem cookies de terceiros · Sem Google</p>
+  <p class="mt-1" style="font-family:var(--mono); color:var(--accent-dim); letter-spacing:0.1em;">vigilância não recíproca</p>
+</footer>
+</div>
+
+<script>
+/* ======================================== */
+/* ===== ANIMAÇÃO DE ENTRADA ===== */
+/* ======================================== */
+
+function gerarOlhos() {
+  const layer = document.getElementById('eyesLayer');
+  const numOlhos = window.innerWidth < 600 ? 8 : 14;
+  
+  for (let i = 0; i < numOlhos; i++) {
+    const eye = document.createElement('div');
+    eye.className = 'eye';
+    
+    // Distribuir em círculo ao redor do centro
+    const angulo = (i / numOlhos) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+    const raio = 180 + Math.random() * 120;
+    const x = Math.cos(angulo) * raio;
+    const y = Math.sin(angulo) * raio;
+    const size = 45 + Math.random() * 35;
+    const delay = Math.random() * 3;
+    // Inclinação natural do olho humano dependendo da posição na órbita
+    const angle = (angulo * 180 / Math.PI) + 90; 
+    
+    eye.style.setProperty('--x', x + 'px');
+    eye.style.setProperty('--y', y + 'px');
+    eye.style.setProperty('--size', size + 'px');
+    eye.style.setProperty('--delay', delay + 's');
+    eye.style.setProperty('--angle', angle + 'deg');
+    
+    layer.appendChild(eye);
+  }
+}
+
+function iniciarSequencia() {
+  const overlay = document.getElementById('intro-overlay');
+  
+  // Phase 1: Expulsar olhos violentamente + flash verde
+  overlay.classList.add('phase-1');
+  
+  // Phase 2: Caixa "te puxa para dentro"
+  setTimeout(() => { overlay.classList.add('phase-2'); }, 700);
+  
+  // Phase 3: Túnel de dados
+  setTimeout(() => {
+    overlay.classList.add('phase-3');
+    iniciarTunelDados();
+  }, 1500);
+  
+  // Phase 4: Fade para o site principal
+  setTimeout(() => {
+    overlay.classList.add('phase-4');
+    document.body.classList.add('site-active');
+  }, 3200);
+  
+  // Remover overlay da DOM
+  setTimeout(() => { overlay.classList.add('hidden'); }, 3800);
+}
+
+function iniciarTunelDados() {
+  const tunnel = document.getElementById('dataTunnel');
+  const conteudos = [
+    ['AES-256-GCM', 'RSA-4096', 'SHA-512', 'ChaCha20', 'ECDSA-P384', 'E2E-OK', 'PGP-VERIFIED', 'TOR-NODE-7F3A', 'ONION-V3', 'HMAC-SHA256', 'X25519', 'SALTED-HASH'],
+    ['01101001 01101100', '0xDEADBEEF', '0xCAFE1337', '10110010 01001011', '0x4A7F2C9E', '0xFF00AA55'],
+    ['23.5505° S', '46.6333° W', 'LAT:-15.793', 'LON:-47.882', 'ALT:1180m', 'HDOP:0.9', 'SAT:12', 'GPS-LOCKED'],
+    ['▮ PRIVACY', '◈ OPSEC', '◆ ENCRYPT', '▶ SECURE', '★ ANON', '⚡ ZERO-TRUST', '⬡ MESH', '⬢ TOR'],
+    ['ACCESS GRANTED', 'FIREWALL ACTIVE', 'TRACKER BLOCKED', 'DATA ENCRYPTED', 'METADATA STRIPPED', 'IDENTITY HIDDEN', 'VPN: CONNECTED'],
+    ['gpg --armor --export', 'openssl enc -aes256', 'chmod 700 ~/vault', 'iptables -A INPUT -j DROP', 'ufw enable', 'ssh -i key.pem'],
+    ['01001000 01100101', '01101100 01101100', '01101111 00100000', '01010111 01101111', '01110010 01101100', '01100100 00100001']
+  ];
+  
+  const numColunas = window.innerWidth < 600 ? 15 : 30;
+  for (let i = 0; i < numColunas; i++) {
+    const col = document.createElement('div');
+    col.className = 'data-column';
+    if (Math.random() > 0.7) col.classList.add('dim');
+    if (Math.random() > 0.9) col.classList.add('warn');
+    
+    col.style.left = (i / numColunas * 100) + '%';
+    col.style.fontSize = (10 + Math.random() * 8) + 'px';
+    const duracao = 1.2 + Math.random() * 1;
+    col.style.animationDuration = duracao + 's';
+    col.style.animationDelay = (Math.random() * 0.5) + 's';
+    
+    const tipo = conteudos[Math.floor(Math.random() * conteudos.length)];
+    const linhas = [];
+    for (let j = 0; j < 20; j++) linhas.push(tipo[Math.floor(Math.random() * tipo.length)]);
+    col.textContent = linhas.join('\n');
+    tunnel.appendChild(col);
+  }
+  
+  const simbolos = ['▮ KEST0', '◆ PRIVACY', '◈ SECURE', '▮ ENCRYPTED', '★ WELCOME'];
+  simbolos.forEach((simb, idx) => {
+    setTimeout(() => {
+      const big = document.createElement('div');
+      big.className = 'big-symbol';
+      big.textContent = simb;
+      big.style.top = (20 + Math.random() * 50) + '%';
+      big.style.left = (10 + Math.random() * 70) + '%';
+      tunnel.appendChild(big);
+      setTimeout(() => big.remove(), 1500);
+    }, idx * 300);
+  });
+  
+  for (let i = 0; i < 8; i++) {
+    setTimeout(() => {
+      const ping = document.createElement('div');
+      ping.className = 'gps-ping';
+      ping.style.top = Math.random() * 100 + '%';
+      ping.style.left = Math.random() * 100 + '%';
+      tunnel.appendChild(ping);
+      setTimeout(() => ping.remove(), 1000);
+    }, Math.random() * 1500);
+  }
+}
+
+gerarOlhos();
+document.getElementById('scene').addEventListener('click', iniciarSequencia);
+document.querySelector('.intro-title').addEventListener('click', iniciarSequencia);
+
+/* ======================================== */
+/* ===== RESTO DO JS ===== */
+/* ======================================== */
+const GLOSSARIO = {
+  "privacidade": "Controle sobre quem acessa quais informações sobre você, e em que contexto.",
+  "corretores de dados": "Empresas que compilam e revendem informações pessoais coletadas de várias fontes.",
+  "código aberto": "Software cujo código-fonte é público e pode ser auditado.",
+  "criptografia de ponta a ponta": "Sistema em que apenas remetente e destinatário leem o conteúdo.",
+  "opsec": "Segurança Operacional. Conjunto de hábitos para proteger informações sensíveis.",
+  "metadados": "Dados sobre os dados: quem falou com quem, quando, de onde.",
+  "lgpd": "Lei Geral de Proteção de Dados (Lei nº 13.709/2018).",
+  "anpd": "Autoridade Nacional de Proteção de Dados.",
+  "verificação em duas etapas": "2FA. Segunda camada de segurança além da senha.",
+  "gerenciador de senhas": "Programa que guarda todas as suas senhas em um cofre criptografado."
+};
+
+const QUIZ = [
+  { q: "Você usa a mesma senha em mais de 3 contas importantes?", opts: [{ t: "Sim", score: 3 }, { t: "2 ou 3 diferentes", score: 1 }, { t: "Cada conta única", score: 0 }] },
+  { q: "Seu perfil principal de rede social está:", opts: [{ t: "Público", score: 3 }, { t: "Misto", score: 1 }, { t: "Privado", score: 0 }] },
+  { q: "Tem 2FA no e-mail principal?", opts: [{ t: "Não", score: 3 }, { t: "Só SMS", score: 1 }, { t: "App autenticador", score: 0 }] },
+  { q: "Clica em 'Aceitar Todos' nos cookies?", opts: [{ t: "Sempre", score: 3 }, { t: "Rejeito", score: 0 }, { t: "Uso bloqueador", score: 0 }] },
+  { q: "Clica em links de WhatsApp desconhecidos?", opts: [{ t: "Sim", score: 3 }, { t: "Às vezes", score: 1 }, { t: "Nunca", score: 0 }] },
+  { q: "Permissão de localização 'Sempre' para quantos apps?", opts: [{ t: "Vários", score: 3 }, { t: "Só essenciais", score: 1 }, { t: "Revisado", score: 0 }] },
+  { q: "Backup recente?", opts: [{ t: "Não", score: 3 }, { t: "Não testado", score: 1 }, { t: "Regra 3-2-1", score: 0 }] },
+  { q: "Postou foto de viagem em tempo real?", opts: [{ t: "Frequente", score: 2 }, { t: "Já fiz", score: 1 }, { t: "Só depois", score: 0 }] },
+  { q: "Usa Wi-Fi público para banco?", opts: [{ t: "Sim", score: 3 }, { t: "Só urgente", score: 1 }, { t: "Nunca", score: 0 }] },
+  { q: "Sabe usar a LGPD?", opts: [{ t: "Não", score: 3 }, { t: "Ouvi falar", score: 1 }, { t: "Já usei", score: 0 }] }
+];
+
+const DESAFIOS = ["Ative 2FA no WhatsApp.", "Revise permissões de localização.", "Troque uma senha importante.", "Faça backup de uma pasta.", "Pesquise seu nome em data broker.", "Converse com família sobre golpes.", "Desative rastreamento de anúncios.", "Instale app autenticador."];
+const PAISES = {
+  china: { nome: "China", cor: "#ff4444", texto: "Vigilância estatal em massa. Sistema de crédito social." },
+  eua: { nome: "Estados Unidos", cor: "#ffcc00", texto: "Vigilância corporativa intensa. NSA revelada por Snowden." },
+  ue: { nome: "União Europeia", cor: "#00ff88", texto: "Referência em proteção com o GDPR." },
+  brasil: { nome: "Brasil", cor: "#ffcc00", texto: "LGPD em vigor. Vazamento da Serasa (220 milhões de CPFs)." },
+  russia: { nome: "Rússia", cor: "#ff4444", texto: "Vigilância estatal e repressão a jornalistas." },
+  israel: { nome: "Israel", cor: "#ff4444", texto: "Sede da NSO Group, fabricante do Pegasus." }
+};
+
+function route() {
+  const hash = location.hash.replace('#', '') || 'home';
+  document.querySelectorAll('.page, .dossie').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(hash);
+  if (target) {
+    target.classList.add('active');
+    window.scrollTo(0, 0);
+    if (hash.startsWith('dossie-')) marcarArquivoLido(hash);
+  } else {
+    document.getElementById('home').classList.add('active');
+  }
+  document.querySelectorAll('.nav-menu a').forEach(a => {
+    const href = a.getAttribute('href').replace('#', '');
+    let active = href === hash || (href === 'ala-dossies' && hash.startsWith('dossie-'));
+    a.classList.toggle('active', active);
+  });
+  document.getElementById('navMenu').classList.remove('open');
+}
+
+window.addEventListener('hashchange', route);
+window.addEventListener('load', () => {
+  route(); initQuiz(); initChecklist(); initCalculadora(); initGlossario(); initMapa(); initPainel(); initTooltipMobile(); injectCommunityCTA();
+});
+document.getElementById('navToggle').addEventListener('click', () => { document.getElementById('navMenu').classList.toggle('open'); });
+
+function injectCommunityCTA() {
+  const ctaHTML = `<div class="community-cta"><h4>ESTE ARQUIVO ESTÁ EM CONSTANTE REVISÃO</h4><p>O KEST0 não é um monumento estático, é um manual de campo vivo. A vigilância evolui, e nossas defesas precisam evoluir junto. Se você identificou uma falha neste dossiê, descobriu uma ferramenta melhor, ou quer debater estratégias reais de OPSEC, resistência às Big Techs e fomento ao software livre, seu lugar é na nossa comunidade.</p><p style="margin-bottom:1rem;"><strong>Lá, não somos apenas leitores: somos operadores em treinamento, construindo alternativas coletivas.</strong></p><a href="https://discord.gg/hHM4nR77n" class="btn-discord" target="_blank" rel="noopener"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>Acessar canal de feedbacks e sugestões</a></div>`;
+  document.querySelectorAll('.dossie').forEach(dossie => {
+    const nav = dossie.querySelector('.dossie-nav');
+    if (nav) nav.insertAdjacentHTML('beforebegin', ctaHTML);
+  });
+}
+
+let quizAtual = 0, quizScore = 0;
+function initQuiz() { renderQuizPergunta(); }
+function renderQuizPergunta() {
+  const cont = document.getElementById('quizContent');
+  const bar = document.getElementById('quizProgressBar');
+  if (quizAtual >= QUIZ.length) { renderQuizResultado(); return; }
+  const p = QUIZ[quizAtual];
+  bar.style.width = ((quizAtual / QUIZ.length) * 100) + '%';
+  cont.innerHTML = `<div class="text-dim" style="font-size:0.85rem;">PERGUNTA ${quizAtual + 1} DE ${QUIZ.length}</div><div class="quiz-question">${p.q}</div><div class="quiz-options">${p.opts.map((o, i) => `<button class="quiz-option" data-idx="${i}">${o.t}</button>`).join('')}</div>`;
+  cont.querySelectorAll('.quiz-option').forEach(btn => {
+    btn.addEventListener('click', () => { quizScore += p.opts[parseInt(btn.dataset.idx)].score; quizAtual++; renderQuizPergunta(); });
+  });
+}
+function renderQuizResultado() {
+  const cont = document.getElementById('quizContent');
+  document.getElementById('quizProgressBar').style.width = '100%';
+  const pct = Math.round((1 - quizScore / 30) * 100);
+  let nivel, cor, dica;
+  if (pct >= 80) { nivel = "INVISÍVEL"; cor = "#00ff88"; dica = "Hábitos sólidos."; }
+  else if (pct >= 50) { nivel = "RASTREADO"; cor = "#ffcc00"; dica = "Brechas abertas."; }
+  else { nivel = "Livro Aberto"; cor = "#ff4444"; dica = "Dados expostos."; }
+  cont.innerHTML = `<div class="quiz-result"><div class="level" style="color:${cor}">${nivel}</div><div class="score">${pct}% de proteção</div><p class="text-dim">${dica}</p><button class="quiz-restart" onclick="reiniciarQuiz()">Refazer</button></div>`;
+  localStorage.setItem('kest0_quiz_feito', '1'); atualizarPainel();
+}
+function reiniciarQuiz() { quizAtual = 0; quizScore = 0; renderQuizPergunta(); }
+
+function initChecklist() {
+  const checks = document.querySelectorAll('#checklist input[type="checkbox"]');
+  const saved = JSON.parse(localStorage.getItem('kest0_checklist') || '{}');
+  checks.forEach(cb => {
+    if (saved[cb.id]) { cb.checked = true; cb.nextElementSibling.classList.add('done'); }
+    cb.addEventListener('change', () => {
+      const data = JSON.parse(localStorage.getItem('kest0_checklist') || '{}');
+      data[cb.id] = cb.checked;
+      localStorage.setItem('kest0_checklist', JSON.stringify(data));
+      cb.nextElementSibling.classList.toggle('done', cb.checked);
+      atualizarChecklistProgress(); atualizarPainel();
+    });
+  });
+  atualizarChecklistProgress();
+  document.getElementById('resetChecklist').addEventListener('click', () => {
+    if (confirm('Zerar progresso?')) {
+      localStorage.removeItem('kest0_checklist');
+      checks.forEach(cb => { cb.checked = false; cb.nextElementSibling.classList.remove('done'); });
+      atualizarChecklistProgress(); atualizarPainel();
+    }
+  });
+}
+function atualizarChecklistProgress() {
+  const checks = document.querySelectorAll('#checklist input[type="checkbox"]');
+  const done = [...checks].filter(c => c.checked).length;
+  document.getElementById('checklistProgress').style.width = Math.round((done / checks.length) * 100) + '%';
+  document.getElementById('checklistCounter').textContent = `${done} de ${checks.length} concluídos`;
+}
+
+function initCalculadora() {
+  document.getElementById('calcBtn').addEventListener('click', () => {
+    const msg = parseInt(document.getElementById('calcMsg').value) || 0;
+    const fotos = parseInt(document.getElementById('calcFotos').value) || 0;
+    const video = parseInt(document.getElementById('calcVideo').value) || 0;
+    const audio = parseInt(document.getElementById('calcAudio').value) || 0;
+    const total = (msg * 0.002) + (fotos * 3) + (video * 5) + (audio * 0.5);
+    document.getElementById('calcValue').textContent = total.toFixed(1) + ' MB';
+    document.getElementById('calcResult').classList.remove('hidden');
+  });
+}
+
+function initGlossario() {
+  document.getElementById('glossaryList').innerHTML = Object.entries(GLOSSARIO).map(([t, d]) => `<div class="glossary-item"><dt>${t.toUpperCase()}</dt><dd>${d}</dd></div>`).join('');
+}
+
+function initTooltipMobile() {
+  document.addEventListener('click', (e) => {
+    const term = e.target.closest('.term');
+    document.querySelectorAll('.term.show').forEach(t => { if (t !== term) t.classList.remove('show'); });
+    if (term) { term.classList.toggle('show'); e.preventDefault(); }
+  });
+}
+
+function initMapa() {
+  document.querySelectorAll('.map-pin').forEach(pin => {
+    pin.addEventListener('click', () => {
+      const pais = PAISES[pin.dataset.country];
+      document.querySelectorAll('.map-pin').forEach(p => p.classList.remove('active'));
+      pin.classList.add('active');
+      document.getElementById('mapInfo').innerHTML = `<h3 style="color:${pais.cor}">${pais.nome}</h3><p>${pais.texto}</p>`;
+    });
+  });
+}
+
+function initPainel() {
+  const semana = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 1)) / 604800000);
+  document.getElementById('desafioText').textContent = DESAFIOS[semana % DESAFIOS.length];
+  const desafioFeito = localStorage.getItem('kest0_desafio_semana') == semana;
+  if (desafioFeito) {
+    document.getElementById('desafioBtn').textContent = '✓ Concluído';
+    document.getElementById('desafioBtn').disabled = true;
+    document.getElementById('desafioBtn').style.opacity = '0.5';
+  }
+  document.getElementById('desafioBtn').addEventListener('click', () => {
+    localStorage.setItem('kest0_desafio_semana', semana);
+    document.getElementById('desafioBtn').textContent = '✓ Concluído';
+    document.getElementById('desafioBtn').disabled = true;
+    document.getElementById('desafioBtn').style.opacity = '0.5';
+    atualizarPainel();
+  });
+  atualizarPainel();
+}
+
+function marcarArquivoLido(hash) {
+  const lidos = JSON.parse(localStorage.getItem('kest0_arquivos_lidos') || '[]');
+  if (!lidos.includes(hash)) {
+    lidos.push(hash);
+    localStorage.setItem('kest0_arquivos_lidos', JSON.stringify(lidos));
+    atualizarPainel();
+  }
+}
+
+function atualizarPainel() {
+  const quizFeito = localStorage.getItem('kest0_quiz_feito') === '1';
+  const checklist = JSON.parse(localStorage.getItem('kest0_checklist') || '{}');
+  const checklistCompleto = Object.values(checklist).filter(v => v).length === 12;
+  const arquivosLidos = JSON.parse(localStorage.getItem('kest0_arquivos_lidos') || '[]');
+  const arquivosOk = arquivosLidos.length >= 5;
+  const semana = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 1)) / 604800000);
+  const desafioFeito = localStorage.getItem('kest0_desafio_semana') == semana;
+  document.getElementById('badgeTeste').classList.toggle('done', quizFeito);
+  document.getElementById('badgeChecklist').classList.toggle('done', checklistCompleto);
+  document.getElementById('badgeArquivos').classList.toggle('done', arquivosOk);
+  document.getElementById('badgeDesafio').classList.toggle('done', desafioFeito);
+  const pontos = [quizFeito, checklistCompleto, arquivosOk, desafioFeito].filter(v => v).length;
+  const pct = Math.round((pontos / 4) * 100);
+  document.getElementById('painelPercent').textContent = pct + '% completo';
+  let nivel = pct === 100 ? "FANTASMA" : pct >= 75 ? "PROTEGIDO" : pct >= 50 ? "ATENTO" : pct >= 25 ? "OBSERVADO" : "EXPOSTO";
+  document.getElementById('painelLevel').textContent = nivel;
+}
+</script>
+</body>
+</html>
